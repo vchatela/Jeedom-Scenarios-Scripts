@@ -1,0 +1,64 @@
+- Nom du scénario : Anniversaires du jour
+- Objet parent : Appartement
+- Mode du scénario : schedule
+    - Programmation : 5 9 * * *
+
+
+
+    
+    SI #[Toulouse][Calendrier Google][Event Today]# == 1  
+    ALORS
+         
+        SI #[Toulouse][Calendrier Google][Today]# matches "/Anniversaire/"  
+        ALORS
+             
+            CODE
+             (code) $cmd = cmd::byString("#682#");
+            $events_today = $cmd->execCmd();
+            $birthday_today_list = array();
+            $events_list = explode(";", $events_today);
+            foreach ($events_list as $event) {
+            	if (strpos(strtolower($event), 'anniversaire') !== false) {
+            		#event anniversaire
+            		$event = str_replace("Toute la journée :", "", $event); 
+            		array_push($birthday_today_list,$event);
+            		#$scenario->setData("event_anniversaire", $event);
+            	}
+            }
+            
+            if(!empty($birthday_today_list)){
+            	$scenario->setData("event_anniversaire", join('-', $birthday_today_list));
+                    #$scenario->setLog(join('-', $birthday_today_list));
+            }
+         (scenario) start de [Notifications][Notifications][Gestion Notifications]
+        SINON
+    SINON
+    
+    SI #[Toulouse][Calendrier Google][Event Tomorrow]# == 1  
+    ALORS
+         
+        SI #[Toulouse][Calendrier Google][Tomorrow]# matches "/Anniversaire/"  
+        ALORS
+             
+            CODE
+             (code) $cmd = cmd::byString("#683#");
+            $events_tomorrow = $cmd->execCmd();
+            #$scenario->setLog("$events_tomorrow");
+            $birthday_tomorrow_list = array();
+            $events_list = explode(";", $events_tomorrow);
+            foreach ($events_list as $event) {
+            	if (strpos(strtolower($event), 'anniversaire') !== false) {
+            		#event anniversaire
+            		$event = str_replace("Toute la journée :", "", $event);
+            		array_push($birthday_tomorrow_list,$event);
+            		#$scenario->setData("event_tomorrow_anniversaire", $event);
+            	}
+            }
+            
+            if(!empty($birthday_tomorrow_list)){
+            	$scenario->setData("event_tomorrow_anniversaire", join('-', $birthday_tomorrow_list));
+                    #$scenario->setLog(join('-', $birthday_tomorrow_list));
+            }
+         (scenario) start de [Notifications][Notifications][Gestion Notifications]
+        SINON
+    SINON

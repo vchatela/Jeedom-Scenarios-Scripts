@@ -1,0 +1,37 @@
+- Nom du scénario : Fête du jour
+- Objet parent : Appartement
+- Mode du scénario : schedule
+    - Programmation : 5 9 * * *
+
+
+
+    
+    ACTION
+     (variable) Affectation de la variable : event_fete_today à 
+    
+    CODE
+     (code) $cmd = cmd::byString("#177#");
+    $events_today = $cmd->execCmd();
+    $person_list = $scenario->getData("fete_a_souhaiter");
+    $fete_today_list = array();
+    $person_array = explode(";", $person_list);
+    foreach ($person_array as $person) {
+    	if (strpos(strtolower($events_today), strtolower($person)) !== false) {
+          $scenario->setLog("P : $person");
+    		#event anniversaire
+          	array_push($fete_today_list,$person);
+    	}
+    }
+    if(!empty($fete_today_list)){
+    	$scenario->setData("event_fete_today", join(', ', $fete_today_list));
+    }
+    
+    SI variable(event_fete_today) != ""
+    ALORS
+         
+        ACTION
+         (scenario) start de [Notifications][Notifications][Gestion Notifications]
+    SINON
+    
+    ACTION
+     delete_variable - Options : {"enable":"1","background":"0","name":"event_fete_today","value":""}
