@@ -1,0 +1,110 @@
+- Nom du scénario : Gestion Notifications
+- Objet parent : Notifications
+- Mode du scénario : provoke
+    - Evènement : 
+
+
+
+    
+    comment
+    
+    SI tag(importance)!=""
+    ALORS
+         
+        SI #importance#>=10
+        ALORS
+         #[Notifications][SMS Jeedom][SMS Val]# - Options : {"enable":"1","background":"0","title":"","message":"#titre# : #message#"}
+        SINON
+         
+        SI #importance#>=1
+        ALORS
+         #[Notifications][Gmail][Valentin Gmail]# - Options : {"enable":"1","background":"0","title":"[Jeedom] ALERTE : #titre#","message":"#message#"}
+        SINON
+    SINON
+    
+    comment
+    
+    SI tag(topic)=="" || tag(topic)=="global" 
+    ALORS
+         
+        ACTION
+             
+            SI tag(titre) != ""
+            ALORS
+             #[Notifications][Slack Jeedom][Message jeedomtoulouse]# - Options : {"enable":"1","background":"0","title":"","message":"*#titre#*"}
+            SINON
+         #[Notifications][Slack Jeedom][Message jeedomtoulouse]# - Options : {"enable":"1","background":"0","title":"","message":"[Global] #message#"}
+    SINON
+         
+        SI  tag(topic)=="reporting" 
+        ALORS
+             
+            ACTION
+                 
+                SI tag(titre) != ""
+                ALORS
+                 #[Notifications][Slack Jeedom][Message jeedomtoulouse_reporting]# - Options : {"enable":"1","background":"0","title":"","message":"*#titre#*"}
+                SINON
+             #[Notifications][Slack Jeedom][Message jeedomtoulouse_reporting]# - Options : {"enable":"1","background":"0","title":"","message":"[Reporting] #message#"}
+        SINON
+             
+            SI  tag(topic)=="electricite" 
+            ALORS
+                 
+                ACTION
+                     
+                    SI tag(titre) != ""
+                    ALORS
+                     #[Notifications][Slack Jeedom][Message jeedomtoulouse_electricite]# - Options : {"enable":"1","background":"0","title":"","message":"*#titre#*"}
+                    SINON
+                 #[Notifications][Slack Jeedom][Message jeedomtoulouse_electricite]# - Options : {"enable":"1","background":"0","title":"","message":"[Electricit\u00e9] #message#"}
+            SINON
+                 
+                SI  tag(topic)=="alerte"
+                ALORS
+                     
+                    ACTION
+                         
+                        SI tag(titre) != ""
+                        ALORS
+                         #[Notifications][Slack Jeedom][Message jeedomtoulouse_alerte]# - Options : {"enable":"1","background":"0","title":"","message":"*#titre#*"}
+                        SINON
+                     #[Notifications][Slack Jeedom][Message jeedomtoulouse_alerte]# - Options : {"enable":"1","background":"0","title":"","message":"[Alerte] #message#"}
+                SINON
+                     
+                    SI  tag(topic)=="evenement" 
+                    ALORS
+                         
+                        ACTION
+                             
+                            SI tag(titre) != ""
+                            ALORS
+                             #[Notifications][Slack Jeedom][Message jeedomtoulouse_evenement]# - Options : {"enable":"1","background":"0","title":"","message":"*#titre#*"}
+                            SINON
+                         #[Notifications][Slack Jeedom][Message jeedomtoulouse_evenement]# - Options : {"enable":"1","background":"0","title":"","message":"[Ev\u00e9nement] #message#"}
+                    SINON
+                         
+                        SI tag(topic)=="alarme"
+                        ALORS
+                             
+                            ACTION
+                                 
+                                SI tag(titre) != ""
+                                ALORS
+                                 #[Notifications][Slack Jeedom][Message jeedomtoulouse_alarme]# - Options : {"enable":"1","background":"0","title":"","message":"*#titre#*"}
+                                SINON
+                             #[Notifications][Slack Jeedom][Message jeedomtoulouse_alarme]# - Options : {"enable":"1","background":"0","title":"","message":"[Alarme] #message#"}
+                        SINON
+                             
+                            SI tag(topic)=="erreur"
+                            ALORS
+                                 
+                                ACTION
+                                     
+                                    SI tag(titre) != ""
+                                    ALORS
+                                     #[Notifications][Slack Jeedom][Message jeedomtoulouse_errors]# - Options : {"enable":"1","background":"0","title":"","message":"*#titre#*"}
+                                    SINON
+                                 #[Notifications][Slack Jeedom][Message jeedomtoulouse_errors]# - Options : {"enable":"1","background":"0","title":"","message":"[Erreur] #message#"}
+                            SINON
+                             #[Notifications][Slack Jeedom][Message jeedomtoulouse]# - Options : {"enable":"1","background":"0","title":"","message":"Topic inconnu ...\n#message#"}
