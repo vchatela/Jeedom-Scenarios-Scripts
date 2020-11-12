@@ -6,6 +6,26 @@
 
 
     
+    ACTION
+     #[Equipements][Speedtest][Rafraichir]# - Options : {"enable":"1","background":"0"}
+     (sleep) Pause de  : 2
+    
+    SI #[Equipements][Speedtest][Etat]# == 0  
+    ALORS
+     log - Options : {"enable":"1","background":"0","message":"Internet non disponible .. Attente de la dispo"}
+     #[Equipements][Speedtest][Rafraichir]# - Options : {"enable":"1","background":"0"}
+     message - Options : {"enable":"1","background":"0","message":"Internet non disponible .. Attente de la dispo"}
+     wait - Options : {"enable":"1","background":"0","condition":"#[Equipements][Speedtest][Etat]# == 1","timeout":"900"}
+         
+        SI #[Equipements][Speedtest][Etat]# == 1
+        ALORS
+         log - Options : {"enable":"1","background":"0","message":"Internet de retour, on continue.."}
+        SINON
+         log - Options : {"enable":"1","background":"0","message":"Toujours pas d'internet. Le message ne pourra pas \u00eatre envoy\u00e9.\nTitre :  #titre#\nMessage :  Toujours pas d'internet. Le message ne pourra pas \u00eatre envoy\u00e9.\nTitre :  #titre#\nMessage :  #message#"}
+         message - Options : {"enable":"1","background":"0","message":"Toujours pas d'internet. Le message ne pourra pas \u00eatre envoy\u00e9.\nTitre :  #titre#\nMessage :  Toujours pas d'internet. Le message ne pourra pas \u00eatre envoy\u00e9.\nTitre :  #titre#\nMessage :  #message#                                                                                                                                                                                                                                                                "}
+         (stop) Arret du scenario
+    SINON
+    
     comment
     
     SI tag(importance)!=""
@@ -24,87 +44,45 @@
     
     comment
     
-    SI tag(topic)=="" || tag(topic)=="global" 
-    ALORS
-         
-        ACTION
-             
-            SI tag(titre) != ""
-            ALORS
-             #[Notifications][Slack Jeedom][Message jeedomtoulouse]# - Options : {"enable":"1","background":"0","title":"","message":"*#titre#*"}
-            SINON
-         #[Notifications][Slack Jeedom][Message jeedomtoulouse]# - Options : {"enable":"1","background":"0","title":"","message":"[Global] #message#"}
-    SINON
-         
-        SI  tag(topic)=="reporting" 
-        ALORS
-             
-            ACTION
-                 
-                SI tag(titre) != ""
-                ALORS
-                 #[Notifications][Slack Jeedom][Message jeedomtoulouse_reporting]# - Options : {"enable":"1","background":"0","title":"","message":"*#titre#*"}
-                SINON
-             #[Notifications][Slack Jeedom][Message jeedomtoulouse_reporting]# - Options : {"enable":"1","background":"0","title":"","message":"[Reporting] #message#"}
-        SINON
-             
-            SI  tag(topic)=="electricite" 
-            ALORS
-                 
-                ACTION
-                     
-                    SI tag(titre) != ""
-                    ALORS
-                     #[Notifications][Slack Jeedom][Message jeedomtoulouse_electricite]# - Options : {"enable":"1","background":"0","title":"","message":"*#titre#*"}
-                    SINON
-                 #[Notifications][Slack Jeedom][Message jeedomtoulouse_electricite]# - Options : {"enable":"1","background":"0","title":"","message":"[Electricit\u00e9] #message#"}
-            SINON
-                 
-                SI  tag(topic)=="alerte"
-                ALORS
-                     
-                    ACTION
-                         
-                        SI tag(titre) != ""
-                        ALORS
-                         #[Notifications][Slack Jeedom][Message jeedomtoulouse_alerte]# - Options : {"enable":"1","background":"0","title":"","message":"*#titre#*"}
-                        SINON
-                     #[Notifications][Slack Jeedom][Message jeedomtoulouse_alerte]# - Options : {"enable":"1","background":"0","title":"","message":"[Alerte] #message#"}
-                SINON
-                     
-                    SI  tag(topic)=="evenement" 
-                    ALORS
-                         
-                        ACTION
-                             
-                            SI tag(titre) != ""
-                            ALORS
-                             #[Notifications][Slack Jeedom][Message jeedomtoulouse_evenement]# - Options : {"enable":"1","background":"0","title":"","message":"*#titre#*"}
-                            SINON
-                         #[Notifications][Slack Jeedom][Message jeedomtoulouse_evenement]# - Options : {"enable":"1","background":"0","title":"","message":"[Ev\u00e9nement] #message#"}
-                    SINON
-                         
-                        SI tag(topic)=="alarme"
-                        ALORS
-                             
-                            ACTION
-                                 
-                                SI tag(titre) != ""
-                                ALORS
-                                 #[Notifications][Slack Jeedom][Message jeedomtoulouse_alarme]# - Options : {"enable":"1","background":"0","title":"","message":"*#titre#*"}
-                                SINON
-                             #[Notifications][Slack Jeedom][Message jeedomtoulouse_alarme]# - Options : {"enable":"1","background":"0","title":"","message":"[Alarme] #message#"}
-                        SINON
-                             
-                            SI tag(topic)=="erreur"
-                            ALORS
-                                 
-                                ACTION
-                                     
-                                    SI tag(titre) != ""
-                                    ALORS
-                                     #[Notifications][Slack Jeedom][Message jeedomtoulouse_errors]# - Options : {"enable":"1","background":"0","title":"","message":"*#titre#*"}
-                                    SINON
-                                 #[Notifications][Slack Jeedom][Message jeedomtoulouse_errors]# - Options : {"enable":"1","background":"0","title":"","message":"[Erreur] #message#"}
-                            SINON
-                             #[Notifications][Slack Jeedom][Message jeedomtoulouse]# - Options : {"enable":"1","background":"0","title":"","message":"Topic inconnu ...\n#message#"}
+    CODE
+     (code) function send_slack($channel, $message){
+    	$cmd_option = array('message' => $message);
+    	$cmd = cmd::byString($channel);
+    	$cmd->execCmd($cmd_option);
+    }
+    
+    $tags=$scenario->getTags();
+    $scenario->setLog(print_r($tags,true));
+    
+    # topics
+    $topic_list = array(
+    	"global" => "[Notifications][Slack Jeedom][Message jeedomtoulouse]",
+    	"reporting" => "[Notifications][Slack Jeedom][Message jeedomtoulouse_reporting]",
+    	"electricite" => "[Notifications][Slack Jeedom][Message jeedomtoulouse_electricite]",
+    	"alerte" => "[Notifications][Slack Jeedom][Message jeedomtoulouse_alerte]",
+    	"evenement" => "[Notifications][Slack Jeedom][Message jeedomtoulouse_evenement]",
+    	"alarme" => "[Notifications][Slack Jeedom][Message jeedomtoulouse_alarme]",
+    	"plex" => "[Notifications][Slack Jeedom][Message jeedomtoulouse_plex]"
+    );
+    
+    if(array_key_exists('#topic#',$tags)){
+    	$topic=str_replace('"','',$tags['#topic#']);
+    } else {
+    	$topic="global";
+    }
+    
+    $channel="#".$topic_list[$topic]."#";
+    
+    # Gestion titre
+    if(array_key_exists("#titre#",$tags)){
+    	$titre=str_replace('"','',$tags["#titre#"]);
+    	send_slack($channel,"*".$titre."*");
+    }
+    # Gestion message
+    if(array_key_exists("#message#",$tags)){
+    	$message=str_replace('"','',$tags['#message#']);
+    } else {
+    	# error !!!
+    	$scenario->setLog("No message received..");
+    }
+    send_slack($channel,"[".ucwords($topic)."] ".$message);
