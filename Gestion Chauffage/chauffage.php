@@ -263,6 +263,7 @@ function main(){
       $scenario->setLog("Chambre $heure_debut_chambre-1h00");
       $message_debut="[Thermostat] Programmation prévue pour demain :";
     }
+    send_notification($debut_message."Chambre 1h05-6h15 + Chambre 6h15-$heure_fin_chambre + Sejour $heure_debut_jour_sejour-$heure_fin_jour_sejour + Chambre $heure_debut_chambre-1h00","electricite",0);
   }
   else {
     $scenario->setLog("Deux blocs en journée.");
@@ -310,4 +311,3 @@ $GLOBALS['test_for_tomorrow']=$scenario->getData('test_for_tomorrow');
 $GLOBALS['alert_sms']=1;
 main();
 $GLOBALS['alert_sms']=0;
->

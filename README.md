@@ -66,3 +66,8 @@ Une variable jeedom stocke la liste des anniversaires à souhaiter (nom) et si u
 Une variable jeedom stocke la liste des prénoms des fêtes à souhaiter et si un objet existe dans l'éphéméride du jour alors un notification est envoyée.
 
 *Plus de détails dans le readme dédié.*
+
+## Plex Webhook
+#### Fonctionnalités  
+Permet de récupérer les infos du webhook vers Jeedom afin de déclencher des événements dans Jeedom en fonction des intéractions plex.
+Nécessite le plexpass.

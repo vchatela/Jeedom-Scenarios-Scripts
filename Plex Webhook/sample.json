@@ -1,0 +1,55 @@
+{
+	"event": "media.stop",
+	"user": true,
+	"owner": true,
+	"Account": {
+		"id": 1,
+		"thumb": "https://plex.tv/users/d0c9b26d9e537caf/avatar?c=1577184454",
+		"title": "XXXXXXXXXXXXXXXXX"
+	},
+	"Server": {
+		"title": "synologyXXXXXX",
+		"uuid": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+	},
+	"Player": {
+		"local": false,
+		"publicAddress": "XX.XX.XX.XXX",
+		"title": "Mi Box",
+		"uuid": "XXXXXXXXXXX-com-plexapp-android"
+	},
+	"Metadata": {
+		"librarySectionType": "show",
+		"ratingKey": "6713",
+		"key": "/library/metadata/6713",
+		"parentRatingKey": "6710",
+		"grandparentRatingKey": "6709",
+		"guid": "com.plexapp.agents.thetvdb://77625/6/3?lang=fr",
+		"parentGuid": "com.plexapp.agents.thetvdb://77625/6?lang=fr",
+		"grandparentGuid": "com.plexapp.agents.thetvdb://77625?lang=fr",
+		"type": "episode",
+		"title": "Dirigeable en déroute",
+		"titleSort": "Dirigeable en deroute",
+		"grandparentKey": "/library/metadata/6709",
+		"parentKey": "/library/metadata/6710",
+		"librarySectionTitle": "Séries TV",
+		"librarySectionID": 2,
+		"librarySectionKey": "/library/sections/2",
+		"grandparentTitle": "Totally Spies!",
+		"parentTitle": "Season 6",
+		"summary": "Jerry convoque les filles et leur demande d'escorter trois méchants vers une île où ils seront enfermés...",
+		"index": 3,
+		"parentIndex": 6,
+		"viewOffset": 685903,
+		"lastViewedAt": 1605091453,
+		"year": 2001,
+		"thumb": "/library/metadata/6713/thumb/1604445634",
+		"art": "/library/metadata/6709/art/1604445689",
+		"parentThumb": "/library/metadata/6710/thumb/1604445687",
+		"grandparentThumb": "/library/metadata/6709/thumb/1604445689",
+		"grandparentArt": "/library/metadata/6709/art/1604445689",
+		"grandparentTheme": "/library/metadata/6709/theme/1604445689",
+		"originallyAvailableAt": "2001-01-01",
+		"addedAt": 1585931184,
+		"updatedAt": 1604445634
+	}
+}

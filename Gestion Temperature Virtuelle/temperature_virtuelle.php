@@ -1,5 +1,34 @@
 <?
-	function extract_valid_values($temperature_list, $humidity_list){
+$temperature_errors_badvalue=0;
+$temperature_errors_tooold=0;
+$temperature_ok=0;
+$humidity_errors_badvalue=0;
+$humidity_errors_tooold=0;
+$humidity_ok=0;
+
+function check_sensor_states(){
+	global $temperature_errors_badvalue;
+  	global $temperature_errors_tooold;
+  	global $temperature_ok;
+    global $humidity_errors_badvalue;
+  	global $humidity_errors_tooold;
+  	global $humidity_ok;
+	
+	cmd::byString("#[Séjour][TH Virtuel][temperature_errors_badvalue]#")->event(($temperature_errors_badvalue));
+	cmd::byString("#[Séjour][TH Virtuel][temperature_errors_tooold]#")->event(($temperature_errors_tooold));
+	cmd::byString("#[Séjour][TH Virtuel][temperature_ok]#")->event(($temperature_ok));
+	cmd::byString("#[Séjour][TH Virtuel][humidity_errors_badvalue]#")->event(($humidity_errors_badvalue));
+	cmd::byString("#[Séjour][TH Virtuel][humidity_errors_tooold]#")->event(($humidity_errors_tooold));
+	cmd::byString("#[Séjour][TH Virtuel][humidity_ok]#")->event(($humidity_ok));
+}
+
+function extract_valid_values($temperature_list, $humidity_list){
+  	global $temperature_errors_badvalue;
+  	global $temperature_errors_tooold;
+  	global $temperature_ok;
+    global $humidity_errors_badvalue;
+  	global $humidity_errors_tooold;
+  	global $humidity_ok;
 	$now = strtotime("now");
 	global $scenario;
 	#$scenario->setLog("Now date : " . $now);
@@ -15,8 +44,16 @@
 			#$scenario->setLog("Foreach date strtotime: " . $date);
 			#$scenario->setLog("Diff : " . ($now - $date_strtotime));
 			if(($now - $date_strtotime) < $acceptable_seconds_delay){
-				#$scenario->setLog("Sensor : " . $sensor_name . " - Date : " . $date . " - Valeur : " . $temperature . " accepté !");
-				$valid_temperature_list[$sensor_name] = $temperature;
+              	if($temperature > 40){
+                  	$scenario->setLog("Sensor : " . $sensor_name . " - Date : " . $date . " - Valeur : " . $temperature . " refusé pour valeur de température éronnée!");
+                  $temperature_errors_badvalue = $temperature_errors_badvalue + 1;
+                }else {
+					#$scenario->setLog("Sensor : " . $sensor_name . " - Date : " . $date . " - Valeur : " . $temperature . " accepté !");
+					$valid_temperature_list[$sensor_name] = $temperature;
+                  	$temperature_ok = $temperature_ok + 1;
+                }
+			} else {
+				$temperature_errors_tooold = $temperature_errors_tooold + 1;
 			}
 		}
 	}
@@ -28,8 +65,16 @@
 			#$scenario->setLog("Foreach date strtotime: " . $date);
 			#$scenario->setLog("Diff : " . ($now - $date_strtotime));
 			if(($now - $date_strtotime) < $acceptable_seconds_delay){
-				#$scenario->setLog("Sensor : " . $sensor_name . " - Date : " . $date . " - Valeur : " . $humidity . " accepté !");
-				$valid_humidity_list[$sensor_name] = $humidity;
+              	if($humidity < 5){
+                  $scenario->setLog("Sensor : " . $sensor_name . " - Date : " . $date . " - Valeur : " . $temperature . " refusé pour valeur d'humidité éronnée !");
+                  $humidity_errors_badvalue = $humidity_errors_badvalue + 1;
+                } else {
+					#$scenario->setLog("Sensor : " . $sensor_name . " - Date : " . $date . " - Valeur : " . $humidity . " accepté !");
+					$valid_humidity_list[$sensor_name] = $humidity;
+					$humidity_ok = $humidity_ok +1;
+                }
+			} else {
+				$humidity_errors_tooold = $humidity_errors_tooold + 1;
 			}
 		}
 	}
@@ -85,30 +130,46 @@ function compute_final_values($valid_temperature_list, $valid_humidity_list){
 	
 	if(sizeof($haut_th_sensors_list) != 0){
 		$final_temperature = array_sum($haut_th_sensors_list)/count($haut_th_sensors_list);
+		if(sizeof($haut_th_sensors_list) == 1){
+			send_notifications("[Gestion TH Virtuel] Un seul capteur température haut utilisé : ". print_r($haut_th_sensors_list, true));
+		}
+		#$scenario->setLog("final_temperature via      haut_th_sensors_list");
 	}
 	else {
 		if(sizeof($valid_temperature_list) != 0){
 			$final_temperature = array_sum($valid_temperature_list)/count($valid_temperature_list);
+			send_notifications("[Gestion TH Virtuel]  Seuls les capteur rpi sont utilisés pour température :" . print_r($valid_temperature_list, true));
+			#$scenario->setLog("final_temperature via      valid_temperature_list");
+		} else {
+			send_notifications("[Gestion TH Virtuel] Aucun capteur température dispo !");
 		}
 	}
 	
 	if(sizeof($haut_hum_sensors_list) != 0){
 		$final_humidity = array_sum($haut_hum_sensors_list)/count($haut_hum_sensors_list);
+		if(sizeof($haut_hum_sensors_list) == 1){
+			send_notifications("[Gestion TH Virtuel] Un seul capteur humidité haut utilisé : ". print_r($haut_hum_sensors_list, true));
+		}
 		#$scenario->setLog("final_humidity via      haut_hum_sensors_list   -- final_humidity : " . $final_humidity);
 	}
 	else {
 		if(sizeof($valid_humidity_list) != 0){
 			$final_humidity = array_sum($valid_humidity_list)/count($valid_humidity_list);
+			send_notifications("[Gestion TH Virtuel] Seuls les capteur rpi sont utilisés pour humidité :" . print_r($valid_humidity_list, true));
 			#$scenario->setLog("final_humidity via      valid_humidity_list   -- final_humidity : " . $final_humidity);
+		}else {
+			send_notifications("[Gestion TH Virtuel] Aucun capteur humidité dispo !");
 		}
 	}
 	
+	# Checks 
 	if($final_temperature == 100){
-		send_notifications("[Gestion TH Virtuel] Température finale : 100°C... ");
+		send_notifications("[Gestion TH Virtuel] Température finale : 100°C... donc pas capteurs dispo !");
 	}
 	if($final_humidity == 200){
-		send_notifications("[Gestion TH Virtuel] Humidité finale : 200%... ");
+		send_notifications("[Gestion TH Virtuel] Humidité finale : 200% ... donc pas capteurs dispo !");
 	}
+	
 	#$scenario->setLog("final_temperature : " . $final_temperature);
 	#$scenario->setLog("final_humidity : " . $final_humidity);
 	
@@ -185,6 +246,8 @@ function main(){
   list($valid_temperature_list, $valid_humidity_list) = extract_valid_values($temperature_list, $humidity_list);
   # Define final values
   list($final_temperature, $final_humidity) = compute_final_values($valid_temperature_list, $valid_humidity_list);
+  # Inform risks on sensors 
+  check_sensor_states();
   
   # Set final values
   $final_temperature = round($final_temperature,2);
@@ -197,4 +260,3 @@ function main(){
 }
 
 main();
->
