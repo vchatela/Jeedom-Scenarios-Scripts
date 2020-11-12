@@ -90,10 +90,10 @@ function extract_valid_values($temperature_list, $humidity_list){
 	#}
 	# Check if no valid value
 	#if(sizeof($valid_temperature_list) == 0){
-	#	send_notifications("[Gestion TH Virtuel] Aucune température n'est valide .. \n " . $printable_temperature_dates);
+	#	send_notification("[Gestion TH Virtuel] Aucune température n'est valide .. \n " . $printable_temperature_dates);
 	#}
 	#if(sizeof($valid_humidity_list) == 0){
-	#	send_notifications("[Gestion TH Virtuel] Aucune humidité n'est valide .. \n " . $printable_himidity_dates);
+	#	send_notification("[Gestion TH Virtuel] Aucune humidité n'est valide .. \n " . $printable_himidity_dates);
 	#}
 	#$scenario->setLog("Valid_temperature_list : " . print_r($valid_temperature_list, true));
 	#$scenario->setLog("Valid_humidity_list : " . print_r($valid_humidity_list, true));
@@ -101,12 +101,23 @@ function extract_valid_values($temperature_list, $humidity_list){
 	return array($valid_temperature_list, $valid_humidity_list);
 }
 
-function send_notifications($message){
-  global $scenario;
-  $id_scenario_notification = 8;
-  $scenario = scenario::byId($id_scenario_notification);
-  $scenario->launch();
-  $scenario->setLog($message);
+function send_notification($message){
+  	global $scenario;
+ 	$id_notif_scenario=8;
+    $notif_scenario=scenario::byId($id_notif_scenario);
+  	$titre=$scenario->getName();# scenario name
+
+    #Récupérer les tags dans un scenaraio
+    $tags = $notif_scenario->getTags();
+    #Ajouter des tags
+    $tags['#titre#'] = "Scenario : ".$titre;
+    $tags['#message#'] = $message;
+    $tags['#topic#'] = "electricite";  	
+    $scenario->setLog("Notification envoyée : ".$message);
+  
+    #Passer les tags à un sous-scenario et le lancer
+    $notif_scenario->setTags($tags);
+    $notif_scenario->launch(); 
 }
 
 function compute_final_values($valid_temperature_list, $valid_humidity_list){
@@ -131,43 +142,43 @@ function compute_final_values($valid_temperature_list, $valid_humidity_list){
 	if(sizeof($haut_th_sensors_list) != 0){
 		$final_temperature = array_sum($haut_th_sensors_list)/count($haut_th_sensors_list);
 		if(sizeof($haut_th_sensors_list) == 1){
-			send_notifications("[Gestion TH Virtuel] Un seul capteur température haut utilisé : ". print_r($haut_th_sensors_list, true));
+			send_notification("[Gestion TH Virtuel] Un seul capteur température haut utilisé : ". print_r($haut_th_sensors_list, true));
 		}
 		#$scenario->setLog("final_temperature via      haut_th_sensors_list");
 	}
 	else {
 		if(sizeof($valid_temperature_list) != 0){
 			$final_temperature = array_sum($valid_temperature_list)/count($valid_temperature_list);
-			send_notifications("[Gestion TH Virtuel]  Seuls les capteur rpi sont utilisés pour température :" . print_r($valid_temperature_list, true));
+			send_notification("[Gestion TH Virtuel]  Seuls les capteur rpi sont utilisés pour température :" . print_r($valid_temperature_list, true));
 			#$scenario->setLog("final_temperature via      valid_temperature_list");
 		} else {
-			send_notifications("[Gestion TH Virtuel] Aucun capteur température dispo !");
+			send_notification("[Gestion TH Virtuel] Aucun capteur température dispo !");
 		}
 	}
 	
 	if(sizeof($haut_hum_sensors_list) != 0){
 		$final_humidity = array_sum($haut_hum_sensors_list)/count($haut_hum_sensors_list);
 		if(sizeof($haut_hum_sensors_list) == 1){
-			send_notifications("[Gestion TH Virtuel] Un seul capteur humidité haut utilisé : ". print_r($haut_hum_sensors_list, true));
+			send_notification("[Gestion TH Virtuel] Un seul capteur humidité haut utilisé : ". print_r($haut_hum_sensors_list, true));
 		}
 		#$scenario->setLog("final_humidity via      haut_hum_sensors_list   -- final_humidity : " . $final_humidity);
 	}
 	else {
 		if(sizeof($valid_humidity_list) != 0){
 			$final_humidity = array_sum($valid_humidity_list)/count($valid_humidity_list);
-			send_notifications("[Gestion TH Virtuel] Seuls les capteur rpi sont utilisés pour humidité :" . print_r($valid_humidity_list, true));
+			send_notification("[Gestion TH Virtuel] Seuls les capteur rpi sont utilisés pour humidité :" . print_r($valid_humidity_list, true));
 			#$scenario->setLog("final_humidity via      valid_humidity_list   -- final_humidity : " . $final_humidity);
 		}else {
-			send_notifications("[Gestion TH Virtuel] Aucun capteur humidité dispo !");
+			send_notification("[Gestion TH Virtuel] Aucun capteur humidité dispo !");
 		}
 	}
 	
 	# Checks 
 	if($final_temperature == 100){
-		send_notifications("[Gestion TH Virtuel] Température finale : 100°C... donc pas capteurs dispo !");
+		send_notification("[Gestion TH Virtuel] Température finale : 100°C... donc pas capteurs dispo !");
 	}
 	if($final_humidity == 200){
-		send_notifications("[Gestion TH Virtuel] Humidité finale : 200% ... donc pas capteurs dispo !");
+		send_notification("[Gestion TH Virtuel] Humidité finale : 200% ... donc pas capteurs dispo !");
 	}
 	
 	#$scenario->setLog("final_temperature : " . $final_temperature);
