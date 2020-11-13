@@ -4,8 +4,29 @@ function startsWith( $haystack, $needle ) {
      return substr( $haystack, 0, $length ) === $needle;
 }
 
+function send_notification($message){
+  	global $scenario;
+ 	$id_notif_scenario=8;
+    $notif_scenario=scenario::byId($id_notif_scenario);
+  	$titre=$scenario->getName();# scenario name
+
+    #Récupérer les tags dans un scenaraio
+    $tags = $notif_scenario->getTags();
+    #Ajouter des tags
+    $tags['#titre#'] = "Scenario : ".$titre;
+    $tags['#message#'] = $message;
+    $tags['#topic#'] = "plex";
+
+  	
+    $scenario->setLog("Notification envoyée : ".$message);
+  
+    #Passer les tags à un sous-scenario et le lancer
+    $notif_scenario->setTags($tags);
+    $notif_scenario->launch(); 
+}
+
 $known_values = array();
-$known_values["mibox"] = "UUUUUUUUU-com-plexapp-android";
+$known_values["mibox_toulouse.uuid"] = "106e1da57d2ea0ff-com-plexapp-android";
 
 // On récupère le payload
 $cmd = cmd::byString("#[Equipements][Plex Webhook][payload]#");
@@ -29,19 +50,23 @@ $payload["Metadata.type"] = $results->Metadata->type;
 $payload["Metadata.key"] = $results->Metadata->key;
 $payload["Metadata.guid"] = $results->Metadata->guid;
 
+$message_stop="[OK] Plex disponible.";
+$message_start="[Occupé] Valentin regarde :".$payload["Metadata.title"];
 
-if(strcmp($payload["Server.title"],"YYYYYYYYYYYYYYYYYY") == 0 || strcmp($payload["Server.uuid"],"XXXXXXXXXXXXXXXX") == 0){
+if(strcmp($payload["Server.title"],"synology_vc") == 0 || strcmp($payload["Server.uuid"],"a626911308c33cf28a2bc4f7465d41360e105b83") == 0){
   #$scenario->setLog('Running on Plex NAS..');
-  if($payload["Account.id"] == 1 || strcmp($payload["Account.title"],"ZZZZZZZZZ")==0){
-    #$scenario->setLog('ZZZZZZZZZZ is playing ..');
+  if($payload["Account.id"] == 1 || strcmp($payload["Account.title"],"chatelard.valentin")==0){
+    #$scenario->setLog('Valentin is playing ..');
   	if(startsWith($payload["Metadata.guid"],"tv.plex.xmltv") || startsWith($payload["Metadata.key"],"/livetv/")){
    		switch ($payload["event"]){
          	case "media.stop":
-        		# que faire
+        		send_notification($message_stop);
+            	$scenario->setData('plex_running',0);
             	$scenario->setLog('event : media.stop raised');
         		break;
            	case "media.play":
-        		# que faire
+        		send_notification($message_start);
+            	$scenario->setData('plex_running',1);
             	$scenario->setLog('event : media.play raised');
             	$scenario->setLog($payload["Metadata.title"] . "is being played");
         		break;
@@ -51,10 +76,22 @@ if(strcmp($payload["Server.title"],"YYYYYYYYYYYYYYYYYY") == 0 || strcmp($payload
         		break;
             case "media.resume":
         		# que faire de resume ? rien ?
+            	if($scenario->getData('plex_running') == 0){
+            		$scenario->setData('plex_running',1);
+                  	send_notification($message_start);
+                }
             	$scenario->setLog('event : media.resume raised');
         		break;
+            case "media.scrobble":
+        		# que faire de resume ? rien ?
+            	if($scenario->getData('plex_running') == 0){
+            		$scenario->setData('plex_running',1);
+                  	send_notification($message_start);
+                }
+            	$scenario->setLog('event : media.scrobble raised');
+        		break;
           default:
-            	$scenario->setLog('default : event='. $payload["event"]);
+            	$scenario->setLog('event not known... : event='. $payload["event"]);
             	break;
         }
   	}
