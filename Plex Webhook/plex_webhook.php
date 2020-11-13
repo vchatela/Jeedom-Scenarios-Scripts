@@ -25,6 +25,19 @@ function send_notification($message){
     $notif_scenario->launch(); 
 }
 
+
+function send_to_queue($message){
+  global $scenario;
+  $queue_action = '[Equipements][Queue Plex][Ajouter]';
+  
+  // Ajout à la queue
+  $cmd_option = array('title' => "", 'message' => $message);
+  $scenario->setLog('Commande : '. $queue_action. '/ ' .json_encode($cmd_option));
+  $cmd = cmd::byString('#'. $queue_action .'#');
+  $cmd->execCmd($cmd_option);
+}
+
+
 $known_values = array();
 $known_values["mibox_toulouse.uuid"] = "106e1da57d2ea0ff-com-plexapp-android";
 
@@ -51,7 +64,7 @@ $payload["Metadata.key"] = $results->Metadata->key;
 $payload["Metadata.guid"] = $results->Metadata->guid;
 
 $message_stop="[OK] Plex disponible.";
-$message_start="[Occupé] Valentin regarde :".$payload["Metadata.title"];
+$message_start="[Occupé] Valentin regarde : ".$payload["Metadata.title"];
 
 if(strcmp($payload["Server.title"],"synology_vc") == 0 || strcmp($payload["Server.uuid"],"a626911308c33cf28a2bc4f7465d41360e105b83") == 0){
   #$scenario->setLog('Running on Plex NAS..');
@@ -61,17 +74,24 @@ if(strcmp($payload["Server.title"],"synology_vc") == 0 || strcmp($payload["Serve
    		switch ($payload["event"]){
          	case "media.stop":
         		send_notification($message_stop);
+				send_to_queue($message_stop);
             	$scenario->setData('plex_running',0);
             	$scenario->setLog('event : media.stop raised');
         		break;
            	case "media.play":
         		send_notification($message_start);
+				send_to_queue($message_start);
             	$scenario->setData('plex_running',1);
             	$scenario->setLog('event : media.play raised');
             	$scenario->setLog($payload["Metadata.title"] . "is being played");
         		break;
             case "media.pause":
         		# que faire de pause ? rien ?
+				if($scenario->getData('plex_running') == 1){
+            		$scenario->setData('plex_running',0);
+                  	send_notification($message_stop);
+					send_to_queue($message_stop);
+                }
             	$scenario->setLog('event : media.pause raised');
         		break;
             case "media.resume":
@@ -79,6 +99,7 @@ if(strcmp($payload["Server.title"],"synology_vc") == 0 || strcmp($payload["Serve
             	if($scenario->getData('plex_running') == 0){
             		$scenario->setData('plex_running',1);
                   	send_notification($message_start);
+					send_to_queue($message_start);
                 }
             	$scenario->setLog('event : media.resume raised');
         		break;
@@ -87,6 +108,7 @@ if(strcmp($payload["Server.title"],"synology_vc") == 0 || strcmp($payload["Serve
             	if($scenario->getData('plex_running') == 0){
             		$scenario->setData('plex_running',1);
                   	send_notification($message_start);
+					send_to_queue($message_start);
                 }
             	$scenario->setLog('event : media.scrobble raised');
         		break;
