@@ -1,27 +1,49 @@
 <?
-function send_notification($message,$topic,$is_important){
-  	global $scenario;
- 	$id_notif_scenario=8;
-    $notif_scenario=scenario::byId($id_notif_scenario);
-  	$titre=$scenario->getName();# scenario name
+// function send_notification_via_scenario($message,$topic,$is_important){
+  	// global $scenario;
+ 	// $id_notif_scenario=8;
+    // $notif_scenario=scenario::byId($id_notif_scenario);
+  	// $titre=$scenario->getName();# scenario name
 
-    #Récupérer les tags dans un scenario
-    $tags = $notif_scenario->getTags();
-    #Ajouter des tags
-    #$tags['#titre#'] = "Scenario : ".$titre;
-    $tags['#message#'] = $message;
-    $tags['#topic#'] = $topic;
-  	if($is_important && $GLOBALS['alert_sms']==1){
-    	$tags['#importance#'] = 10;
-      	$GLOBALS['alert_sms']=0;
-    }
+    // #Récupérer les tags dans un scenario
+    // $tags = $notif_scenario->getTags();
+    // #Ajouter des tags
+    // #$tags['#titre#'] = "Scenario : ".$titre;
+    // $tags['#message#'] = $message;
+    // $tags['#topic#'] = $topic;
+  	// if($is_important && $GLOBALS['alert_sms']==1){
+    	// $tags['#importance#'] = 10;
+      	// $GLOBALS['alert_sms']=0;
+    // }
 
   	
-    $scenario->setLog("Notification envoyée : ".$message);
+    // $scenario->setLog("Notification envoyée : ".$message);
   
-    #Passer les tags à un sous-scenario et le lancer
-    $notif_scenario->setTags($tags);
-    $notif_scenario->launch(); 
+    // #Passer les tags à un sous-scenario et le lancer
+    // $notif_scenario->setTags($tags);
+    // $notif_scenario->launch(); 
+// }
+
+function send_notification_1j($message){
+  global $scenario;
+  $queue_action = '[Notifications][Queue Erreurs 1xjour][Ajouter]';
+  
+  // Ajout à la queue
+  $cmd_option = array('title' => "", 'message' => $message);
+  $scenario->setLog('Commande : '. $queue_action. '/ ' .json_encode($cmd_option));
+  $cmd = cmd::byString('#'. $queue_action .'#');
+  $cmd->execCmd($cmd_option);
+}
+
+function send_notification($message){
+  global $scenario;
+  $queue_action = '[Notifications][Queue Erreurs journée][Ajouter]';
+  
+  // Ajout à la queue
+  $cmd_option = array('title' => "", 'message' => $message);
+  $scenario->setLog('Commande : '. $queue_action. '/ ' .json_encode($cmd_option));
+  $cmd = cmd::byString('#'. $queue_action .'#');
+  $cmd->execCmd($cmd_option);
 }
 
 $msg="";
@@ -35,6 +57,7 @@ $tags=$scenario->getTags();
 $useless_errors=array("Attention le thermostat est suspendu","This parser can only read from strings or streams","La somme des sous-équipements est supérieure");
 $msg_to_reduce_array=array("[Appartement][Attestations Covid]");
 $useless_plugins_errors=array("vigilancemeteo","netatmoPublicData");
+$once_day_plugins_errors=array("ics");
 
 $plug=$tags['#plug#'];
 $msg_source=$tags['#erreur#'];
@@ -91,7 +114,11 @@ if($found_msg != null){
       }
       
       if($msg != ""){
-		send_notification($msg,"erreur",0);
+		if(in_array($plugin,$once_day_plugins_errors)){
+			send_notification_1j($msg);
+		} else {
+			send_notification($msg);
+		}
     } else {
      	 $scenario->setLog("ERROR msg empty.. not sent so.");
     }
