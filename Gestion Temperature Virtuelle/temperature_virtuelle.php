@@ -1,273 +1,315 @@
 <?
-$temperature_errors_badvalue=0;
-$temperature_errors_tooold=0;
-$temperature_ok=0;
-$humidity_errors_badvalue=0;
-$humidity_errors_tooold=0;
-$humidity_ok=0;
-
-function check_sensor_states(){
-	global $temperature_errors_badvalue;
-  	global $temperature_errors_tooold;
-  	global $temperature_ok;
-    global $humidity_errors_badvalue;
-  	global $humidity_errors_tooold;
-  	global $humidity_ok;
+######################### Data structure #########################
+class SensorsState {
+	public $temperature_errors_badvalue=0;
+	public $temperature_errors_tooold=0;
+	public $temperature_ok=0;
+	public $temperature_ok_sensorlist_cat1=array();
+	public $temperature_ok_sensorlist_cat2=array();
+	public $final_temperature=100;
 	
-	cmd::byString("#[Séjour][TH Virtuel][temperature_errors_badvalue]#")->event(($temperature_errors_badvalue));
-	cmd::byString("#[Séjour][TH Virtuel][temperature_errors_tooold]#")->event(($temperature_errors_tooold));
-	cmd::byString("#[Séjour][TH Virtuel][temperature_ok]#")->event(($temperature_ok));
-	cmd::byString("#[Séjour][TH Virtuel][humidity_errors_badvalue]#")->event(($humidity_errors_badvalue));
-	cmd::byString("#[Séjour][TH Virtuel][humidity_errors_tooold]#")->event(($humidity_errors_tooold));
-	cmd::byString("#[Séjour][TH Virtuel][humidity_ok]#")->event(($humidity_ok));
+	public $humidity_errors_badvalue=0;
+	public $humidity_errors_tooold=0;
+	public $humidity_ok=0;
+	public $humidity_ok_sensorlist_cat1=array();
+	public $humidity_ok_sensorlist_cat2=array();
+	public $final_humidity=200;
+	
+	function f_temperature_errors_badvalue(){
+		$this->temperature_errors_badvalue += 1;
+	}
+	
+	function f_temperature_errors_tooold(){
+		$this->temperature_errors_tooold += 1;
+	}
+	
+	function f_temperature_ok($sensorname,$category,$value){
+		$this->temperature_ok += 1;
+		if(strcmp($category, "First_category") == 0) {
+			$this->temperature_ok_sensorlist_cat1[$sensorname] = $value;
+		} else {
+			$this->temperature_ok_sensorlist_cat2[$sensorname] = $value;
+		}
+	}
+	
+	function f_humidity_errors_badvalue(){
+		$this->humidity_errors_badvalue += 1;
+	}
+	
+	function f_humidity_errors_tooold(){
+		$this->humidity_errors_tooold += 1;
+	}
+	
+	function f_humidity_ok($sensorname,$category,$value){
+		$this->humidity_ok += 1;
+		if(strcmp($category, "First_category") == 0) {
+			$this->humidity_ok_sensorlist_cat1[$sensorname] = $value;
+		} else {
+			$this->humidity_ok_sensorlist_cat2[$sensorname] = $value;
+		}
+	}
 }
 
-function extract_valid_values($temperature_list, $humidity_list){
-  	global $temperature_errors_badvalue;
-  	global $temperature_errors_tooold;
-  	global $temperature_ok;
-    global $humidity_errors_badvalue;
-  	global $humidity_errors_tooold;
-  	global $humidity_ok;
-	$now = strtotime("now");
+######################### Core informations #########################
+$data_base = array(
+	"[Séjour][TH Virtuel]" => array(
+		"SensorsState" => new SensorsState(),
+		"Temperature_list" => array(
+			"First_category" => array(
+				"sensors" => array(
+					"[Séjour][Capteur TH][Température]" => array(),
+					"[Séjour][Capteur TH Hauteur][Température]" => array()
+				)
+			),
+			"Second_category" => array(
+				"sensors" => array(
+					"[Séjour][DHT22][Température]" => array(),
+					"[Séjour][DS18B20][Température]" => array()
+				)
+			)
+		),
+		"Humidity_list" => array(
+			"First_category" => array(
+				"sensors" => array(
+					"[Séjour][Capteur TH][Humidité]" => array(),
+					"[Séjour][Capteur TH Hauteur][Humidité]" => array()
+				)
+			),
+			"Second_category" => array(
+				"sensors" => array(
+					"[Séjour][DHT22][Humidité]" => array()
+				)
+			)
+		)
+	),
+	"[Bureau][TH Virtuel]" => array(
+		"SensorsState" => new SensorsState(),
+		"Temperature_list" => array(
+			"First_category" => array(
+				"sensors" => array(
+					"[Bureau][Capteur TH][Température]" => array(),
+					"[Bureau][Capteur TH Haut][Température]" => array()
+				)
+			),
+			"Second_category" => array(
+				"sensors" => array()
+			)
+		),
+		"Humidity_list" => array(
+			"First_category" => array(
+				"sensors" => array(
+					"[Bureau][Capteur TH][Humidité]" => array(),
+					"[Bureau][Capteur TH Haut][Humidité]" => array()
+				)
+			),
+			"Second_category" => array(
+				"sensors" => array()
+			)
+		)
+	),
+	"[Chambre][TH Virtuel]" => array(
+		"SensorsState" => new SensorsState(),
+		"Temperature_list" => array(
+			"First_category" => array(
+				"sensors" => array(
+					"[Chambre][Capteur TH][Température]" => array(),
+					"[Chambre][Capteur TH Haut][Température]" => array()
+				)
+			),
+			"Second_category" => array(
+				"sensors" => array()
+			)
+		),
+		"Humidity_list" => array(
+			"First_category" => array(
+				"sensors" => array(
+					"[Chambre][Capteur TH][Humidité]" => array(),
+					"[Chambre][Capteur TH Haut][Humidité]" => array()
+				)
+			),
+			"Second_category" => array(
+				"sensors" => array()
+			)
+		)
+	)
+);
+######################### Jeedom Tooling #########################
+
+function log_if_verbose($text){
 	global $scenario;
-	#$scenario->setLog("Now date : " . $now);
-	$valid_temperature_list = array();
-	$valid_humidity_list = array();
-	$acceptable_seconds_delay = 3600;
-	# Valid if under 
-	foreach($temperature_list as $sensor_name => $sensor){
-		foreach($sensor as $date => $temperature){
-			#$scenario->setLog("Foreach Date : " . $date);
-			#$scenario->setLog("Foreach Temperature : " . $temperature);
-			$date_strtotime = strtotime($date);
-			#$scenario->setLog("Foreach date strtotime: " . $date);
-			#$scenario->setLog("Diff : " . ($now - $date_strtotime));
-			if(($now - $date_strtotime) < $acceptable_seconds_delay){
-              	if($temperature > 40){
-                  	$scenario->setLog("Sensor : " . $sensor_name . " - Date : " . $date . " - Valeur : " . $temperature . " refusé pour valeur de température éronnée!");
-                  $temperature_errors_badvalue = $temperature_errors_badvalue + 1;
-                }else {
-					#$scenario->setLog("Sensor : " . $sensor_name . " - Date : " . $date . " - Valeur : " . $temperature . " accepté !");
-					$valid_temperature_list[$sensor_name] = $temperature;
-                  	$temperature_ok = $temperature_ok + 1;
-                }
-			} else {
-				$temperature_errors_tooold = $temperature_errors_tooold + 1;
-			}
-		}
-	}
-	foreach($humidity_list as $sensor_name => $sensor){
-		foreach($sensor as $date => $humidity){
-			#$scenario->setLog("Foreach Date : " . $date);
-			#$scenario->setLog("Foreach Humidity : " . $humidity);
-			$date_strtotime = strtotime($date);
-			#$scenario->setLog("Foreach date strtotime: " . $date);
-			#$scenario->setLog("Diff : " . ($now - $date_strtotime));
-			if(($now - $date_strtotime) < $acceptable_seconds_delay){
-              	if($humidity < 5){
-                  $scenario->setLog("Sensor : " . $sensor_name . " - Date : " . $date . " - Valeur : " . $temperature . " refusé pour valeur d'humidité éronnée !");
-                  $humidity_errors_badvalue = $humidity_errors_badvalue + 1;
-                } else {
-					#$scenario->setLog("Sensor : " . $sensor_name . " - Date : " . $date . " - Valeur : " . $humidity . " accepté !");
-					$valid_humidity_list[$sensor_name] = $humidity;
-					$humidity_ok = $humidity_ok +1;
-                }
-			} else {
-				$humidity_errors_tooold = $humidity_errors_tooold + 1;
-			}
-		}
-	}
-	
-	#Prepare list of values
-	#$printable_temperature_dates = "";
-	#foreach($temperature_date_list as $date) {
-	#	$printable_temperature_dates .= $date;
-	#}
-	#$printable_himidity_dates = "";
-	#foreach($humidity_date_list as $date) {
-	#	$printable_himidity_dates .= $date;
-	#}
-	# Check if no valid value
-	#if(sizeof($valid_temperature_list) == 0){
-	#	send_notification("[Gestion TH Virtuel] Aucune température n'est valide .. \n " . $printable_temperature_dates);
-	#}
-	#if(sizeof($valid_humidity_list) == 0){
-	#	send_notification("[Gestion TH Virtuel] Aucune humidité n'est valide .. \n " . $printable_himidity_dates);
-	#}
-	#$scenario->setLog("Valid_temperature_list : " . print_r($valid_temperature_list, true));
-	#$scenario->setLog("Valid_humidity_list : " . print_r($valid_humidity_list, true));
-	
-	return array($valid_temperature_list, $valid_humidity_list);
+	$LOG=0;
+	if($LOG == 1){
+		$scenario->setLog("$text");
+    }
+}
+
+function set_value_commandname($name,$value){
+	cmd::byString($name)->event($value);
+}
+
+function return_value_commandname($name){
+	log_if_verbose("$name valeur :" . cmd::byString("$name")->execCmd());
+	return cmd::byString("$name")->execCmd();
+}
+
+function return_date_commandname($name){
+	log_if_verbose("$name valeur :" . cmd::byString("$name")->execCmd());
+	return cmd::byString("$name")->getCollectDate();
 }
 
 function send_notification($message){
-  	global $scenario;
- 	$id_notif_scenario=8;
-    $notif_scenario=scenario::byId($id_notif_scenario);
-  	$titre=$scenario->getName();# scenario name
-
-    #Récupérer les tags dans un scenaraio
-    $tags = $notif_scenario->getTags();
-    #Ajouter des tags
-    $tags['#titre#'] = "Scenario : ".$titre;
-    $tags['#message#'] = $message;
-    $tags['#topic#'] = "electricite";  	
-    $scenario->setLog("Notification envoyée : ".$message);
+  global $scenario;
+  $queue_action = '[Notifications][Queue Electricité 20min][Ajouter]';
   
-    #Passer les tags à un sous-scenario et le lancer
-    $notif_scenario->setTags($tags);
-    $notif_scenario->launch(); 
+  // Ajout à la queue
+  $cmd_option = array('title' => "", 'message' => $message);
+  $scenario->setLog('Commande : '. $queue_action. '/ ' .json_encode($cmd_option));
+  $cmd = cmd::byString('#'. $queue_action .'#');
+  $cmd->execCmd($cmd_option);
 }
 
-function compute_final_values($valid_temperature_list, $valid_humidity_list){
+function update_virtual($virtual, $SensorsState){
 	global $scenario;
-	# Set default values 
-	$final_temperature = 100;
-	$final_humidity = 200;
+	set_value_commandname("#".$virtual."[temperature_errors_badvalue]#",$SensorsState->temperature_errors_badvalue);
+	set_value_commandname("#".$virtual."[temperature_errors_tooold]#",$SensorsState->temperature_errors_tooold);
+	set_value_commandname("#".$virtual."[temperature_ok]#",$SensorsState->temperature_ok);
+	set_value_commandname("#".$virtual."[Température]#",$SensorsState->final_temperature);
 	
-	# Compute average of valid list preferably on Xiaomi otherwise on all
+	set_value_commandname("#".$virtual."[humidity_errors_badvalue]#",$SensorsState->humidity_errors_badvalue);
+	set_value_commandname("#".$virtual."[humidity_errors_tooold]#",$SensorsState->humidity_errors_tooold);
+	set_value_commandname("#".$virtual."[humidity_ok]#",$SensorsState->humidity_ok);
+	set_value_commandname("#".$virtual."[Humidité]#",$SensorsState->final_humidity);
 	
-	#$scenario->setLog("valid_temperature_list : " . print_r($valid_temperature_list, true) . " - Sizeof : " . sizeof($valid_temperature_list));
-	#$scenario->setLog("valid_humidity_list : " . print_r($valid_humidity_list, true) . " - Sizeof : " . sizeof($valid_humidity_list));
+	set_value_commandname("#".$virtual."[last_update]#",strftime("%B %d %Y, %X %Z",strtotime("now")));
 	
-	$haut_th_sensors_list = array_intersect_key($valid_temperature_list, array_flip(array("Xiaomi TH","Xiaomi TH Haut")));
-	$haut_hum_sensors_list = array_intersect_key($valid_humidity_list, array_flip(array("Xiaomi TH","Xiaomi TH Haut")));
-	
-	#$scenario->setLog("haut_th_sensors_list : " . print_r($haut_th_sensors_list, true) . " - Sizeof : " . sizeof($haut_th_sensors_list));
-	#$scenario->setLog("haut_hum_sensors_list : " . print_r($haut_hum_sensors_list, true) . " - Sizeof : " . sizeof($haut_hum_sensors_list));
-	
-	
-	
-	if(sizeof($haut_th_sensors_list) != 0){
-		$final_temperature = array_sum($haut_th_sensors_list)/count($haut_th_sensors_list);
-		if(sizeof($haut_th_sensors_list) == 1){
-			send_notification("[Gestion TH Virtuel] Un seul capteur température haut utilisé : ". print_r($haut_th_sensors_list, true));
-		}
-		#$scenario->setLog("final_temperature via      haut_th_sensors_list");
+	if($SensorsState->final_temperature == 100){
+		send_notification($virtual." Température finale : 100°C... donc pas capteurs dispo !");
 	}
-	else {
-		if(sizeof($valid_temperature_list) != 0){
-			$final_temperature = array_sum($valid_temperature_list)/count($valid_temperature_list);
-			send_notification("[Gestion TH Virtuel]  Seuls les capteur rpi sont utilisés pour température :" . print_r($valid_temperature_list, true));
-			#$scenario->setLog("final_temperature via      valid_temperature_list");
-		} else {
-			send_notification("[Gestion TH Virtuel] Aucun capteur température dispo !");
-		}
+	if($SensorsState->final_humidity == 200){
+		send_notification($virtual." Humidité finale : 200% ... donc pas capteurs dispo !");
 	}
-	
-	if(sizeof($haut_hum_sensors_list) != 0){
-		$final_humidity = array_sum($haut_hum_sensors_list)/count($haut_hum_sensors_list);
-		if(sizeof($haut_hum_sensors_list) == 1){
-			send_notification("[Gestion TH Virtuel] Un seul capteur humidité haut utilisé : ". print_r($haut_hum_sensors_list, true));
-		}
-		#$scenario->setLog("final_humidity via      haut_hum_sensors_list   -- final_humidity : " . $final_humidity);
-	}
-	else {
-		if(sizeof($valid_humidity_list) != 0){
-			$final_humidity = array_sum($valid_humidity_list)/count($valid_humidity_list);
-			send_notification("[Gestion TH Virtuel] Seuls les capteur rpi sont utilisés pour humidité :" . print_r($valid_humidity_list, true));
-			#$scenario->setLog("final_humidity via      valid_humidity_list   -- final_humidity : " . $final_humidity);
-		}else {
-			send_notification("[Gestion TH Virtuel] Aucun capteur humidité dispo !");
-		}
-	}
-	
-	# Checks 
-	if($final_temperature == 100){
-		send_notification("[Gestion TH Virtuel] Température finale : 100°C... donc pas capteurs dispo !");
-	}
-	if($final_humidity == 200){
-		send_notification("[Gestion TH Virtuel] Humidité finale : 200% ... donc pas capteurs dispo !");
-	}
-	
-	#$scenario->setLog("final_temperature : " . $final_temperature);
-	#$scenario->setLog("final_humidity : " . $final_humidity);
-	
-	return array($final_temperature, $final_humidity);
+	$scenario->setLog("virtual : " . $virtual);
+	$scenario->setLog("final_temperature : " . $SensorsState->final_temperature);
+	$scenario->setLog("final_humidity : " . $SensorsState->final_humidity);
 }
 
-function main(){
+function check_sensor_valid($sensor_name, $type, &$list, &$sensorstate, $category){
+	$now = strtotime("now");
+	$acceptable_seconds_delay = 3600;
+	
+	$date=$list["date"];
+	$value=$list["value"];
+	
+	$date_strtotime = strtotime($date);
+	log_if_verbose("Date capture: " . $date);
+	log_if_verbose("Diff between now and date capture : " . ($now - $date_strtotime));
+	if(strcmp($type, "Temperature_list") == 0) {
+		if(($now - $date_strtotime) < $acceptable_seconds_delay){
+			if($value > 40){
+				log_if_verbose("Sensor : " . $sensor_name . " - Date : " . $date . " - Valeur : " . $value . " refusé pour valeur de température éronnée!");
+				$sensorstate->f_temperature_errors_badvalue();
+				$list["valid"]=0;
+			}else {
+				log_if_verbose("Sensor : " . $sensor_name . " - Date : " . $date . " - Valeur : " . $value . " accepté !");
+				$sensorstate->f_temperature_ok($sensor_name, $category,$value);
+				$list["valid"]=1;
+			}
+		} else {
+			$sensorstate->f_temperature_errors_tooold();
+			log_if_verbose("Sensor : " . $sensor_name . " - Date : " . $date . " - Valeur : " . $value . " refusé pour date trop ancienne");
+			$list["valid"]=0;
+		}
+	} else { // $type == "Humidity_list"
+		if(($now - $date_strtotime) < $acceptable_seconds_delay){
+			if($value < 5){
+				log_if_verbose("Sensor : " . $sensor_name . " - Date : " . $date . " - Valeur : " . $value . " refusé pour valeur d'humidité éronnée!");
+				$sensorstate->f_humidity_errors_badvalue();
+				$list["valid"]=0;
+			}else {
+				log_if_verbose("Sensor : " . $sensor_name . " - Date : " . $date . " - Valeur : " . $value . " accepté !");
+				$sensorstate->f_humidity_ok($sensor_name, $category,$value);
+				$list["valid"]=1;
+			}
+		} else {
+			$sensorstate->f_humidity_errors_tooold();
+			log_if_verbose("Sensor : " . $sensor_name . " - Date : " . $date . " - Valeur : " . $value . " refusé pour date trop ancienne");
+			$list["valid"]=0;
+		}
+	}
+}
+
+function main(&$data_base){
   global $scenario;
   
-  # Température
-  $cmd_temp_dht22_name = cmd::byString("#[Séjour][DHT22][Température]#");
-  $cmd_temp_dht22 = $cmd_temp_dht22_name->execCmd();
-  $cmd_temp_dht22_date = $cmd_temp_dht22_name->getCollectDate(); 
-  #$scenario->setLog("[Séjour][DHT22][Température] valeur :" . $cmd_temp_dht22);
-  #$scenario->setLog("[Séjour][DHT22][Température] date :" . $cmd_temp_dht22_date);
-  
-  $cmd_temp_DS18B20_name = cmd::byString("#[Séjour][DS18B20][Température]#");
-  $cmd_temp_DS18B20 = $cmd_temp_DS18B20_name->execCmd();
-  $cmd_temp_DS18B20_date = $cmd_temp_DS18B20_name->getCollectDate(); 
-  #$scenario->setLog("[Séjour][DS18B20][Température] valeur :" . $cmd_temp_DS18B20);
-  #$scenario->setLog("[Séjour][DS18B20][Température] date :" . $cmd_temp_DS18B20_date);
-  
-  $cmd_temp_TH_name = cmd::byString("#[Séjour][Capteur TH][Température]#");
-  $cmd_temp_TH = $cmd_temp_TH_name->execCmd();
-  $cmd_temp_TH_date = $cmd_temp_TH_name->getCollectDate(); 
-  #$scenario->setLog("[Séjour][Capteur TH][Température] valeur :" . $cmd_temp_TH);
-  #$scenario->setLog("[Séjour][Capteur TH][Température] date :" . $cmd_temp_TH_date);
-  
-  $cmd_temp_TH_haut_name = cmd::byString("#[Séjour][Capteur TH Hauteur][Température]#");
-  $cmd_temp_TH_haut = $cmd_temp_TH_haut_name->execCmd();
-  $cmd_temp_TH_haut_date = $cmd_temp_TH_haut_name->getCollectDate(); 
-  #$scenario->setLog("[Séjour][Capteur TH Hauteur][Température] valeur :" . $cmd_temp_TH_haut);
-  #$scenario->setLog("[Séjour][Capteur TH Hauteur][Température] date :" . $cmd_temp_TH_haut_date);   
-  
-  $temperature_list = array(
-		"DHT22" => array($cmd_temp_dht22_date => $cmd_temp_dht22),
-		"DS18B20" => array($cmd_temp_DS18B20_date => $cmd_temp_DS18B20),
-		"Xiaomi TH" => array($cmd_temp_TH_date => $cmd_temp_TH),
-		"Xiaomi TH Haut" => array($cmd_temp_TH_haut_date =>$cmd_temp_TH_haut)
-	);
-  
-  #$scenario->setLog("Temperature_list : " . print_r($temperature_list,true));
-  
-  # Humidité
-  $cmd_hum_dht22_name = cmd::byString("#[Séjour][DHT22][Humidité]#");
-  $cmd_hum_dht22 = $cmd_hum_dht22_name ->execCmd();
-  $cmd_hum_dht22_date = $cmd_hum_dht22_name->getCollectDate(); 
-  #$scenario->setLog("[Séjour][DHT22][Humidité] valeur :" . $cmd_hum_dht22);
-  #$scenario->setLog("[Séjour][DHT22][Humidité] date :" . $cmd_hum_dht22_date);   
-  
-  $cmd_hum_TH_name = cmd::byString("#[Séjour][Capteur TH][Humidité]#");
-  $cmd_hum_TH = $cmd_hum_TH_name->execCmd();
-  $cmd_hum_TH_date = $cmd_hum_TH_name->getCollectDate(); 
-  #$scenario->setLog("[Séjour][Capteur TH][Humidité] valeur :" . $cmd_hum_TH);
-  #$scenario->setLog("[Séjour][Capteur TH][Humidité] date :" . $cmd_hum_TH_date);  
-  
-  
-  $cmd_hum_TH_haut_name = cmd::byString("#[Séjour][Capteur TH Hauteur][Humidité]#");
-  $cmd_hum_TH_haut = $cmd_hum_TH_haut_name->execCmd();
-  $cmd_hum_TH_haut_date = $cmd_hum_TH_haut_name->getCollectDate(); 
-  #$scenario->setLog("[Séjour][Capteur TH Hauteur][Humidité] valeur :" . $cmd_hum_TH_haut);
-  #$scenario->setLog("[Séjour][Capteur TH Hauteur][Humidité] date :" . $cmd_hum_TH_haut_date);  
-  
-  $humidity_list = array(
-		"DHT22" => array($cmd_hum_dht22_date => $cmd_hum_dht22),
-		"Xiaomi TH" => array($cmd_hum_TH_date => $cmd_hum_TH),
-		"Xiaomi TH Haut" => array($cmd_hum_TH_haut_date =>$cmd_hum_TH_haut)
-	);
-  
- 
-  #$scenario->setLog("Humidity_list : " . print_r($humidity_list,true));
-  
-  # Extract all valid value (within the range of validity)
-  list($valid_temperature_list, $valid_humidity_list) = extract_valid_values($temperature_list, $humidity_list);
-  # Define final values
-  list($final_temperature, $final_humidity) = compute_final_values($valid_temperature_list, $valid_humidity_list);
-  # Inform risks on sensors 
-  check_sensor_states();
-  
-  # Set final values
-  $final_temperature = round($final_temperature,2);
-  $scenario->setLog("Température finale : " . $final_temperature);
-  cmd::byString("#[Séjour][TH Virtuel][Température]#")->event(($final_temperature));
-  
-  $final_humidity = round($final_humidity,2);
-  $scenario->setLog("Humidité finale : " . $final_humidity);
-  cmd::byString("#[Séjour][TH Virtuel][Humidité]#")->event(($final_humidity));
+  ######################### Retrieve values and compute validity #########################
+	foreach($data_base as $virtual => &$infos_zone){
+		foreach(array("Temperature_list","Humidity_list") as $type){
+			foreach(array("First_category","Second_category") as $category){
+				log_if_verbose("category :" . $category);
+				foreach($infos_zone[$type][$category]["sensors"] as $sensor => &$list){
+					# Initilialisations
+					$cmd_temp_name=cmd::byString("#".$sensor."#");
+					$cmd_temp_value=$cmd_temp_name->execCmd();
+					$cmd_temp_date=$cmd_temp_name->getCollectDate();
+					$list += ["value" => "$cmd_temp_value"];
+					$list += ["date" => "$cmd_temp_date"];
+					# Check valid
+					check_sensor_valid($sensor, $type, $list ,$infos_zone["SensorsState"],$category);
+				}
+			}
+		}
+	}
+	log_if_verbose("data_base :" . print_r($data_base, true));
+	
+	######################### Compute final values #########################
+	foreach($data_base as $virtual => &$infos_zone){
+		
+		// Part Temperature
+		$type="Temperature_list";
+		$cat1_array = $infos_zone["SensorsState"]->temperature_ok_sensorlist_cat1;
+		$cat2_array = $infos_zone["SensorsState"]->temperature_ok_sensorlist_cat2;
+		if(sizeof($cat1_array) != 0){
+			if(sizeof($cat1_array) == 1){
+				send_notification($virtual."[First_category] Un seul capteur température haut utilisé : ".print_r($infos_zone["SensorsState"]->temperature_ok_sensorlist_cat1)); 
+			} else {
+				$infos_zone["SensorsState"]->final_temperature = array_sum($cat1_array)/count($cat1_array);
+			}
+		} else {
+			if(sizeof($cat2_array) != 0){
+				if(sizeof($cat2_array) == 1){
+					send_notification($virtual."[Second_category] Un seul capteur température haut utilisé : ".print_r($infos_zone["SensorsState"]->temperature_ok_sensorlist_cat2)); 
+				} else {
+					$infos_zone["SensorsState"]->final_temperature = array_sum($cat2_array)/count($cat2_array);
+				}
+			} else{
+				send_notification($virtual." : Aucun capteur température dispo !");
+			}
+		}
+		// Part Humidity
+		$type="Humidity_list";
+		$cat1_array = $infos_zone["SensorsState"]->humidity_ok_sensorlist_cat1;
+		$cat2_array = $infos_zone["SensorsState"]->humidity_ok_sensorlist_cat2;
+		if(sizeof($cat1_array) != 0){
+			if(sizeof($cat1_array) == 1){
+				send_notification($virtual."[First_category] Un seul capteur humidité haut utilisé : ".print_r($infos_zone["SensorsState"]->humidity_ok_sensorlist_cat1)); 
+			} else {
+				$infos_zone["SensorsState"]->final_humidity = array_sum($cat1_array)/count($cat1_array);
+			}
+		} else {
+			if(sizeof($cat2_array) != 0){
+				if(sizeof($cat2_array) == 1){
+					send_notification($virtual."[Second_category] Un seul capteur humidité haut utilisé : ".print_r($infos_zone["SensorsState"]->humidity_ok_sensorlist_cat2)); 
+				} else {
+					$infos_zone["SensorsState"]->final_humidity = array_sum($cat2_array)/count($cat2_array);
+				}
+			} else{
+				send_notification($virtual." : Aucun capteur humidité dispo !");
+			}
+		}
+		// Update Virtual
+		update_virtual($virtual,$infos_zone["SensorsState"]);
+	}
+	log_if_verbose("data_base :" . print_r($data_base, true));
 }
 
-main();
+main($data_base);
