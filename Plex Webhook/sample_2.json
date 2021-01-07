@@ -1,0 +1,11 @@
+[2020-10-17 18:26:05][SCENARIO] Start : Scenario execute automatiquement sur evenement venant de : [Equipements][Plex Webhook][payload].
+[2020-10-17 18:26:05][SCENARIO] Exécution du sous-élément de type [action] : code
+[2020-10-17 18:26:05][SCENARIO] Exécution d'un bloc code
+[2020-10-17 18:26:05][SCENARIO] PostData :{"event":"media.play","user":true,"owner":true,"Account":{"id":1,"thumb":"https://plex.tv/users/d0c9b26d9e537caf/avatar?c=1577184454","title":"XXXXXXXXX"},"Server":{"title":"DESKTOP-XXXXX","uuid":"ca5f263452a4ad069e7499760de6214ec658e4c8"},"Player":{"local":true,"publicAddress":"","title":"Chrome","uuid":"XXXXXX"},"Metadata":{"librarySectionType":"movie","ratingKey":"4","key":"/library/metadata/4","guid":"com.plexapp.agents.none://9f789dbb76210fae394cfe45901805cebd02f690?lang=xn","type":"movie","title":"Very Bad Blagues - Dans les toilettes de boite de nuit","summary":"","year":2020,"thumb":"/library/metadata/4/thumb/1602947104","art":"/library/metadata/4/art/1602947104","originallyAvailableAt":"2020-10-15","addedAt":1602783675,"updatedAt":1602947104,"createdAtAccuracy":"epoch,local","createdAtTZOffset":"0"}}
+[2020-10-17 18:26:05][SCENARIO] Event: :media.play
+[2020-10-17 18:26:05][SCENARIO] Player : vm1gius8vj0dovyhu4div4tw
+[2020-10-17 18:26:05][SCENARIO] Users : chatelard.valentin
+[2020-10-17 18:26:05][SCENARIO] Title : Very Bad Blagues - Dans les toilettes de boite de nuit
+[2020-10-17 18:26:05][SCENARIO] Type : movie
+[2020-10-17 18:26:05][SCENARIO] Fin correcte du scénario
+------------------------------------
