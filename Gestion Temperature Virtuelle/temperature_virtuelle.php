@@ -259,7 +259,7 @@ function main(&$data_base){
 			}
 		}
 	}
-	log_if_verbose("data_base :" . print_r($data_base, true));
+	#log_if_verbose("data_base :" . print_r($data_base, true));
 	
 	######################### Compute final values #########################
 	foreach($data_base as $virtual => &$infos_zone){
@@ -268,19 +268,18 @@ function main(&$data_base){
 		$type="Temperature_list";
 		$cat1_array = $infos_zone["SensorsState"]->temperature_ok_sensorlist_cat1;
 		$cat2_array = $infos_zone["SensorsState"]->temperature_ok_sensorlist_cat2;
+		log_if_verbose("cat1_array :" . print_r($cat1_array, true));
 		if(sizeof($cat1_array) != 0){
 			if(sizeof($cat1_array) == 1){
-				send_notification($virtual."[First_category] Un seul capteur température haut utilisé : ".print_r($infos_zone["SensorsState"]->temperature_ok_sensorlist_cat1)); 
-			} else {
-				$infos_zone["SensorsState"]->final_temperature = array_sum($cat1_array)/count($cat1_array);
+				send_notification($virtual."[First_category] Un seul capteur température haut utilisé : ". print_r(array_keys($cat1_array)[0],true)); 
 			}
+			$infos_zone["SensorsState"]->final_temperature = array_sum($cat1_array)/count($cat1_array);
 		} else {
 			if(sizeof($cat2_array) != 0){
 				if(sizeof($cat2_array) == 1){
-					send_notification($virtual."[Second_category] Un seul capteur température haut utilisé : ".print_r($infos_zone["SensorsState"]->temperature_ok_sensorlist_cat2)); 
-				} else {
-					$infos_zone["SensorsState"]->final_temperature = array_sum($cat2_array)/count($cat2_array);
+					send_notification($virtual."[Second_category] Un seul capteur température haut utilisé : ". print_r(array_keys($cat2_array)[0],true)); 
 				}
+				$infos_zone["SensorsState"]->final_temperature = array_sum($cat2_array)/count($cat2_array);
 			} else{
 				send_notification($virtual." : Aucun capteur température dispo !");
 			}
@@ -291,17 +290,15 @@ function main(&$data_base){
 		$cat2_array = $infos_zone["SensorsState"]->humidity_ok_sensorlist_cat2;
 		if(sizeof($cat1_array) != 0){
 			if(sizeof($cat1_array) == 1){
-				send_notification($virtual."[First_category] Un seul capteur humidité haut utilisé : ".print_r($infos_zone["SensorsState"]->humidity_ok_sensorlist_cat1)); 
-			} else {
-				$infos_zone["SensorsState"]->final_humidity = array_sum($cat1_array)/count($cat1_array);
+				send_notification($virtual."[First_category] Un seul capteur humidité haut utilisé : ".print_r(array_keys($cat1_array)[0],true)); 
 			}
+			$infos_zone["SensorsState"]->final_humidity = array_sum($cat1_array)/count($cat1_array);
 		} else {
 			if(sizeof($cat2_array) != 0){
 				if(sizeof($cat2_array) == 1){
-					send_notification($virtual."[Second_category] Un seul capteur humidité haut utilisé : ".print_r($infos_zone["SensorsState"]->humidity_ok_sensorlist_cat2)); 
-				} else {
-					$infos_zone["SensorsState"]->final_humidity = array_sum($cat2_array)/count($cat2_array);
+					send_notification($virtual."[Second_category] Un seul capteur humidité haut utilisé : ".print_r(array_keys($cat2_array)[0],true)); 
 				}
+				$infos_zone["SensorsState"]->final_humidity = array_sum($cat2_array)/count($cat2_array);
 			} else{
 				send_notification($virtual." : Aucun capteur humidité dispo !");
 			}
@@ -309,7 +306,7 @@ function main(&$data_base){
 		// Update Virtual
 		update_virtual($virtual,$infos_zone["SensorsState"]);
 	}
-	log_if_verbose("data_base :" . print_r($data_base, true));
+	#log_if_verbose("data_base :" . print_r($data_base, true));
 }
 
 main($data_base);
