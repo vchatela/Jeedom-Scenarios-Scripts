@@ -1,7 +1,7 @@
 <?
 function log_if_verbose($text){
 	global $scenario;
-	$LOG=1;
+	$LOG=0;
 	if($LOG == 1){
 		$scenario->setLog("$text");
     }
@@ -132,7 +132,7 @@ function heure_leve($debut_travail_mathou,$mathou_work)
       
 function heure_couche(){
   	if(is_saturday_or_sunday()){
-      	$heure_couche=2330;
+      	$heure_couche=2245;
     } else {
      	 $heure_couche=2245;
     }
@@ -198,10 +198,11 @@ function main(){
   global $scenario;
   $soulard_mathou_work="Mathou";
   $soulard_val_TT="TT";
-  $abs_pattern="[Abs]";
+  $site_pattern="[Site]";
   $present_pattern="[Présent]";
-  $val_home_working=($GLOBALS['working_from_home']=="1");
-  log_if_verbose("val_home_working : ". var_export($val_home_working,true));
+  $home_working=($GLOBALS['working_from_home']=="1");
+  log_if_verbose("working_from_home : ".$GLOBALS['working_from_home']);
+  log_if_verbose("home_working : ". var_export($home_working,true));
   
   $test_for_tomorrow=$GLOBALS['test_for_tomorrow'];
   log_if_verbose("test_for_tomorrow : $test_for_tomorrow");
@@ -220,9 +221,15 @@ function main(){
   
   # Determine [Présent] today
   $present_today=search_event_exists($events_of_the_day,$present_pattern);
+  log_if_verbose("present_today: $present_today");
+  
+  # Determine [Site] today.
+  $site_today=search_event_exists($events_of_the_day,$site_pattern);
+  log_if_verbose("site_today: $site_today");
   
   # Mathou event work
   $mathou_work=search_event_exists($events_of_the_day,$soulard_mathou_work);
+  log_if_verbose("mathou_work: $mathou_work");
   # mathou_work contains either : false OR "A XXHXX : Mathou"
   if($mathou_work != false){
 	$debut_travail_mathou=extract_start_hour($mathou_work);
@@ -230,11 +237,10 @@ function main(){
   }
   # Val homework
   $val_TT=search_event_exists($events_of_the_day,$soulard_val_TT);
-    
-  ## Gérer cas absence
+  log_if_verbose("val_TT: $val_TT");
   
   ## Déterminer si 1 ou 2 blocs séjour
-  if($mathou_work==false || $val_TT!=false || is_saturday_or_sunday() || $present_today!=false || $val_home_working==true ){
+  if($mathou_work==false || $val_TT!=false || is_saturday_or_sunday() || $present_today!=false || ($home_working==true && $site_today==false)){
    	 $journee_complete=1;
   } else {
    	$journee_complete=0; 
